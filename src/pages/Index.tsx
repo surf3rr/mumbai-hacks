@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Brain, Camera, Mic, Shield, Clock, FileText } from 'lucide-react';
+import { Brain, Camera, Mic, Shield, Clock, FileText, Beaker } from 'lucide-react';
 
 export default function Index() {
   const [consentGiven, setConsentGiven] = useState(false);
@@ -12,7 +12,7 @@ export default function Index() {
 
   const handleStartScreening = () => {
     if (consentGiven) {
-      navigate('/calibration');
+      navigate('/screening');
     }
   };
 
@@ -149,7 +149,7 @@ export default function Index() {
         </Card>
 
         {/* Start Button */}
-        <div className="text-center pb-8">
+        <div className="text-center pb-8 space-y-4">
           <Button 
             size="lg" 
             className="px-8 py-3 text-lg"
@@ -163,6 +163,20 @@ export default function Index() {
               Please provide consent to begin the assessment
             </p>
           )}
+
+          {/* Demo Link */}
+          <div className="pt-4 border-t">
+            <p className="text-sm text-gray-600 mb-2">Want to see how the behavioral engine works?</p>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/demo')}
+              className="flex items-center space-x-2"
+            >
+              <Beaker className="h-4 w-4" />
+              <span>View Behavioral Engine Demo</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
