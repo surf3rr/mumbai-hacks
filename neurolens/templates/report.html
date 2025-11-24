@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screening Report - NeuroLens</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .score-display {
+            font-size: 5rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 15px;
+        }
+        .metric-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-size: 1.2rem;
+        }
+        .risk-low { background-color: #10b981; } /* green */
+        .risk-medium { background-color: #f59e0b; } /* yellow */
+        .risk-high { background-color: #ef4444; } /* red */
+        .risk-none { background-color: #9ca3af; } /* gray */
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Screening Report</h1>
+                    <button id="backBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        <i class="fas fa-arrow-left mr-1"></i> Back
+                    </button>
+                </div>
+                
+                <div class="text-center mb-8">
+                    <h2 class="text-xl text-gray-600 mb-4">Autism Behavioral Risk Assessment</h2>
+                    <div class="w-24 h-1 bg-blue-500 mx-auto mb-6"></div>
+                    
+                    <div id="scoreContainer" class="mb-8">
+                        <div class="score-display" id="riskScore">--</div>
+                        <div class="text-lg text-gray-600 mb-4">Risk Score (0-100)</div>
+                        <div id="riskLabel" class="text-xl font-semibold mb-6">Processing...</div>
+                    </div>
+                    
+                    <div id="loadingIndicator" class="mb-8">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                        <p class="mt-2 text-gray-600">Analyzing behavioral markers...</p>
+                    </div>
+                </div>
+                
+                <div id="resultsContainer" class="hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Detailed Metrics</h3>
+                    
+                    <div id="metricsContainer">
+                        <!-- Metrics will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="mt-8 bg-blue-50 rounded-lg p-6 border border-blue-100">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                            <i class="fas fa-stethoscope mr-2"></i> Professional Recommendation
+                        </h3>
+                        <p id="recommendationText" class="text-gray-700">
+                            Recommendation will appear here after analysis completes.
+                        </p>
+                    </div>
+                    
+                    <div class="mt-8 bg-yellow-50 rounded-lg p-6 border border-yellow-200">
+                        <h3 class="text-lg font-semibold text-yellow-800 mb-3 flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> Important Disclaimer
+                        </h3>
+                        <p class="text-gray-700">
+                            This assessment is for research and educational purposes only. It is not a medical diagnosis. 
+                            Results should not be used as the sole basis for any clinical decision. Always consult with qualified 
+                            healthcare professionals for proper evaluation and diagnosis. Early intervention services may be beneficial 
+                            regardless of screening results.
+                        </p>
+                    </div>
+                    
+                    <div class="flex justify-center mt-8">
+                        <button id="restartBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mr-4">
+                            <i class="fas fa-redo mr-2"></i> Run Another Screening
+                        </button>
+                        <button id="downloadBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg">
+                            <i class="fas fa-download mr-2"></i> Download Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const riskScoreDisplay = document.getElementById('riskScore');
+        const riskLabel = document.getElementById('riskLabel');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const metricsContainer = document.getElementById('metricsContainer');
+        const recommendationText = document.getElementById('recommendationText');
+        const backBtn = document.getElementById('backBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        // Fetch and display report
+        async function fetchReport() {
+            try {
+                const response = await fetch('/api/get_final_report');
+                const data = await response.json();
+                
+                // Update the score display
+                riskScoreDisplay.textContent = data.autism_risk_score;
+                
+                // Determine risk level and apply color coding
+                let riskClass = 'risk-none';
+                let riskText = 'No Data';
+                
+                if (data.autism_risk_score !== 0 || data.metrics.eye_contact !== "No data") {
+                    if (data.autism_risk_score < 40) {
+                        riskClass = 'risk-low';
+                        riskText = 'Low Risk';
+                    } else if (data.autism_risk_score < 60) {
+                        riskClass = 'risk-medium';
+                        riskText = 'Moderate Risk';
+                    } else {
+                        riskClass = 'risk-high';
+                        riskText = 'Higher Risk';
+                    }
+                }
+                
+                riskScoreDisplay.className = `score-display ${riskClass}`;
+                riskLabel.textContent = riskText;
+                riskLabel.className = `text-xl font-semibold mb-6 ${riskClass.replace('risk-', 'text-')}-600`;
+                
+                // Update recommendation
+                recommendationText.textContent = data.recommendation;
+                
+                // Create metric cards
+                const metrics = [
+                    {key: 'eye_contact', label: 'Eye Contact', icon: 'fa-eye'},
+                    {key: 'head_movement', label: 'Head Movement', icon: 'fa-head-side'},
+                    {key: 'facial_expression', label: 'Facial Expression', icon: 'fa-smile'},
+                    {key: 'attention', label: 'Attention Stability', icon: 'fa-bullseye'}
+                ];
+                
+                metricsContainer.innerHTML = '';
+                for (const metric of metrics) {
+                    const value = data.metrics[metric.key];
+                    let valueClass = 'text-gray-600';
+                    
+                    // Determine value class based on metric value
+                    if (metric.key === 'eye_contact' || metric.key === 'attention') {
+                        if (value === 'High') valueClass = 'text-green-600';
+                        else if (value === 'Medium') valueClass = 'text-yellow-600';
+                        else if (value === 'Low') valueClass = 'text-red-600';
+                    } else if (metric.key === 'head_movement') {
+                        if (value === 'Low') valueClass = 'text-green-600';
+                        else if (value === 'Medium') valueClass = 'text-yellow-600';
+                        else if (value === 'High') valueClass = 'text-red-600';
+                    } else if (metric.key === 'facial_expression') {
+                        if (value === 'High variability') valueClass = 'text-green-600';
+                        else if (value === 'Medium variability') valueClass = 'text-yellow-600';
+                        else if (value === 'Low variability') valueClass = 'text-red-600';
+                    }
+                    
+                    const metricCard = document.createElement('div');
+                    metricCard.className = 'metric-card';
+                    metricCard.innerHTML = `
+                        <div class="metric-header">
+                            <div class="metric-icon ${riskClass}">
+                                <i class="fas ${metric.icon}"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold">${metric.label}</h4>
+                        </div>
+                        <div class="metric-value">
+                            <span class="${valueClass} text-xl font-bold">${value}</span>
+                        </div>
+                    `;
+                    metricsContainer.appendChild(metricCard);
+                }
+                
+                // Show results and hide loading
+                loadingIndicator.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+            } catch (err) {
+                console.error("Error fetching report:", err);
+                loadingIndicator.innerHTML = '<p class="text-red-500">Error loading report. Please try again.</p>';
+            }
+        }
+        
+        // Event listeners
+        backBtn.addEventListener('click', () => {
+            window.location.href = '/';
+        });
+        
+        restartBtn.addEventListener('click', () => {
+            window.location.href = '/screen';
+        });
+        
+        downloadBtn.addEventListener('click', () => {
+            alert('Report download functionality would be implemented in a full application');
+        });
+        
+        // Initialize on page load
+        window.addEventListener('load', fetchReport);
+    </script>
+</body>
+</html>

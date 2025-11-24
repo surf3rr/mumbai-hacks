@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screening Session - NeuroLens</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .stimulus-container {
+            display: flex;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .stimulus-half {
+            width: 50%;
+            padding: 10px;
+        }
+        .stimulus-box {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #6b7280;
+        }
+        .face-stimulus {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        }
+        .shape-stimulus {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+        }
+        .webcam-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+        }
+        .webcam-feed {
+            width: 100%;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+        }
+        .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #374151;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress {
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Screening Session</h1>
+                    <button id="backBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        <i class="fas fa-arrow-left mr-1"></i> Back
+                    </button>
+                </div>
+                
+                <div class="text-center mb-6">
+                    <p class="text-gray-600 mb-4">Please sit comfortably and watch the videos while we analyze behavioral markers</p>
+                    <div class="timer" id="timer">120</div>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="stimulus-container">
+                    <div class="stimulus-half">
+                        <div class="stimulus-box face-stimulus">
+                            <i class="fas fa-users mr-2"></i> Social Stimuli (Faces)
+                        </div>
+                    </div>
+                    <div class="stimulus-half">
+                        <div class="stimulus-box shape-stimulus">
+                            <i class="fas fa-cube mr-2"></i> Geometric Shapes
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="webcam-container">
+                    <video id="webcamFeed" class="webcam-feed" autoplay playsinline></video>
+                    <div id="webcamStatus" class="text-center mt-2 text-sm text-gray-600">
+                        Initializing webcam...
+                    </div>
+                </div>
+                
+                <div class="metrics-grid" id="metricsGrid">
+                    <div class="metric-card">
+                        <div class="text-gray-500">Eye Contact</div>
+                        <div class="metric-value" id="eyeContact">--</div>
+                        <div class="text-xs text-gray-400">Looking at screen</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="text-gray-500">Head Movement</div>
+                        <div class="metric-value" id="headMovement">--</div>
+                        <div class="text-xs text-gray-400">Steadiness</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="text-gray-500">Facial Expression</div>
+                        <div class="metric-value" id="facialExpression">--</div>
+                        <div class="text-xs text-gray-400">Variability</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="text-gray-500">Attention</div>
+                        <div class="metric-value" id="attention">--</div>
+                        <div class="text-xs text-gray-400">Focus stability</div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center mt-6">
+                    <button id="startBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg mr-4">
+                        <i class="fas fa-play mr-2"></i> Start Analysis
+                    </button>
+                    <button id="stopBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg" disabled>
+                        <i class="fas fa-stop mr-2"></i> Stop Analysis
+                    </button>
+                </div>
+                
+                <div class="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <h3 class="font-semibold text-blue-800 mb-2">Instructions:</h3>
+                    <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                        <li>Sit about 2-3 feet away from your webcam</li>
+                        <li>Ensure good lighting on your face</li>
+                        <li>Watch the stimulus videos naturally while we analyze your behavior</li>
+                        <li>Stay in frame for the full 2-minute session</li>
+                        <li>Results will be available after the session completes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const webcamFeed = document.getElementById('webcamFeed');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const timerDisplay = document.getElementById('timer');
+        const progress = document.getElementById('progress');
+        const backBtn = document.getElementById('backBtn');
+        const webcamStatus = document.getElementById('webcamStatus');
+        
+        // Metric displays
+        const eyeContactDisplay = document.getElementById('eyeContact');
+        const headMovementDisplay = document.getElementById('headMovement');
+        const facialExpressionDisplay = document.getElementById('facialExpression');
+        const attentionDisplay = document.getElementById('attention');
+        
+        // Variables
+        let stream = null;
+        let timer = null;
+        let secondsLeft = 120;
+        let intervalId = null;
+        
+        // Initialize webcam
+        async function initWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640, 
+                        height: 480,
+                        facingMode: "user"
+                    }, 
+                    audio: false 
+                });
+                webcamFeed.srcObject = stream;
+                webcamStatus.textContent = "Webcam active - ready to start analysis";
+            } catch (err) {
+                console.error("Error accessing webcam:", err);
+                webcamStatus.textContent = "Error accessing webcam: " + err.message;
+            }
+        }
+        
+        // Start analysis
+        async function startAnalysis() {
+            // Start the timer
+            secondsLeft = 120;
+            timerDisplay.textContent = secondsLeft;
+            progress.style.width = '0%';
+            
+            intervalId = setInterval(() => {
+                secondsLeft--;
+                timerDisplay.textContent = secondsLeft;
+                const progressPercent = ((120 - secondsLeft) / 120) * 100;
+                progress.style.width = `${progressPercent}%`;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(intervalId);
+                    stopAnalysis();
+                }
+            }, 1000);
+            
+            // Send start signal to backend
+            try {
+                await fetch('/api/start_analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Start capturing frames
+                captureFrames();
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } catch (err) {
+                console.error("Error starting analysis:", err);
+            }
+        }
+        
+        // Stop analysis
+        async function stopAnalysis() {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            
+            try {
+                await fetch('/api/stop_analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                
+                // Redirect to report page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/report';
+                }, 1000);
+            } catch (err) {
+                console.error("Error stopping analysis:", err);
+            }
+        }
+        
+        // Capture frames and send to backend
+        async function captureFrames() {
+            if (!stream) return;
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions to match video
+            canvas.width = 640;
+            canvas.height = 480;
+            
+            const captureFrame = async () => {
+                if (!webcamFeed.srcObject) return;
+                
+                // Draw current video frame to canvas
+                ctx.drawImage(webcamFeed, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to data URL
+                const imageData = canvas.toDataURL('image/jpeg', 0.5); // Lower quality for faster processing
+                
+                try {
+                    const response = await fetch('/api/process_frame', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ image: imageData })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Update metrics display
+                        if (data.status === 'success') {
+                            eyeContactDisplay.textContent = data.metrics.eye_contact ? 
+                                (data.metrics.eye_contact * 100).toFixed(1) + '%' : '--';
+                            headMovementDisplay.textContent = data.metrics.head_movement ? 
+                                data.metrics.head_movement.toFixed(3) : '--';
+                            facialExpressionDisplay.textContent = data.metrics.facial_expression ? 
+                                data.metrics.facial_expression.toFixed(3) : '--';
+                            attentionDisplay.textContent = data.metrics.attention ? 
+                                (data.metrics.attention * 100).toFixed(1) + '%' : '--';
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error sending frame:", err);
+                }
+                
+                // Schedule next frame capture (every 1 second)
+                setTimeout(captureFrame, 1000);
+            };
+            
+            captureFrame();
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startAnalysis);
+        stopBtn.addEventListener('click', stopAnalysis);
+        backBtn.addEventListener('click', () => {
+            window.location.href = '/';
+        });
+        
+        // Initialize webcam on page load
+        window.addEventListener('load', initWebcam);
+    </script>
+</body>
+</html>

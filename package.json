@@ -10,7 +10,8 @@
     "start": "react-scripts start",
     "build": "vite build",
     "lint": "eslint --quiet ./src",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:full": "bash run_dev.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

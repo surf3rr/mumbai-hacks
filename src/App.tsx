@@ -7,6 +7,7 @@ import ScreeningFlow from './pages/ScreeningFlow';
 import Results from './pages/Results';
 import BehavioralDemo from './pages/BehavioralDemo';
 import NotFound from './pages/NotFound';
+import WebcamScreening from './pages/WebcamScreening';
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/screening" element={<ScreeningFlow />} />
           <Route path="/results" element={<Results />} />
           <Route path="/demo" element={<BehavioralDemo />} />
+          <Route path="/webcam" element={<WebcamScreening />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
